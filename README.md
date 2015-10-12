@@ -5,7 +5,8 @@ A MetricsRegistry with tagging support and a StatsDReporter for datadog.
 ## Features
 
 * Tagging support with Metric
-* Datadog(StatsD) reporter
+* Histogram support
+* Datadog(StatsD) reporter using [Non blocking StatsD client](https://github.com/indeedeng/java-dogstatsd-client)
 
 ## Usage
 
@@ -74,11 +75,11 @@ val metricRegistry = new MetricRegistry()
 .....
 //use metricRegistry in code
 // start a reporter
-val client = new NonBlockingStatsDClient("my.app", "localhost", 8098)
+val statsDClient = new NonBlockingStatsDClient("my.app", "localhost", 8098)
 val reporter = StatsDReporter(
                   name = "my-statsd-reporter",
                   registry = metricRegistry,
-                  statsDClient = client
+                  statsDClient = statsDClient
                 )
 reporter.start(1, TimeUnit.SECONDS)
 ```
