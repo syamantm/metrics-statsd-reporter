@@ -35,16 +35,19 @@ Now use this [TaggedMetrics](src/main/scala/com/syamantakm/metrics/tagging/Tagge
 //record int gauge
 taggedMetrics.gaugeInt("test.gaugeInt", "success", "host1")  {
   // do something that returns an Int
+  // e.g. getQueueSize
 }
 ....
 //record long gauge
 taggedMetrics.gaugeLong("test.gaugeLong", "success", "host1") {
   // do something that returns a Long
+  // e.g. getRowCount
 }
 ...
 //record double gauge
 taggedMetrics.gaugeDouble("test.gaugeDouble", "success", "host1") {
   // do something that returns a Double
+  // e.g. getErrorRate
 }
 ```
 
@@ -54,9 +57,9 @@ taggedMetrics.gaugeDouble("test.gaugeDouble", "success", "host1") {
 val timer = taggedMetrics.timer("test.executionTime", "success", "host1")
 // execute something
 timer.time {
-println("Start execution")
-TimeUnit.MILLISECONDS.sleep(10)
-println("End execution")
+  println("Start execution")
+  TimeUnit.MILLISECONDS.sleep(10)
+  println("End execution")
 }
 ```
 
