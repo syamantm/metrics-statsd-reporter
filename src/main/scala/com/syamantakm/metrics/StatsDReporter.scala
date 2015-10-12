@@ -19,8 +19,7 @@ class StatsDReporter(name: String,
                      rateUnit: TimeUnit,
                      durationUnit: TimeUnit,
                      filter: MetricFilter,
-                     statsDClient: StatsDClient,
-                     tags: Seq[String] = Seq.empty[String])
+                     statsDClient: StatsDClient)
   extends ScheduledReporter(registry, name, filter, rateUnit, durationUnit) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -83,7 +82,7 @@ class StatsDReporter(name: String,
   private def named(name: String, suffixes: String*): String = MetricRegistry.name(name, suffixes: _*)
 
   private def eventTags(value: AnyRef): Seq[String] = {
-    var metricTags = tags
+    var metricTags = Seq.empty[String]
     if (value.isInstanceOf[TaggedName]) {
       metricTags = value.asInstanceOf[TaggedName].tags
     }
@@ -98,4 +97,20 @@ class StatsDReporter(name: String,
       name
     }
   }
+}
+
+object StatsDReporter {
+  def apply(name: String,
+            registry: MetricRegistry,
+            rateUnit: TimeUnit = TimeUnit.SECONDS,
+            durationUnit: TimeUnit = TimeUnit.SECONDS,
+            filter: MetricFilter = MetricFilter.ALL,
+            statsDClient: StatsDClient): StatsDReporter = new StatsDReporter(
+    name = name,
+    registry = registry,
+    rateUnit = rateUnit,
+    durationUnit = durationUnit,
+    filter = MetricFilter.ALL,
+    statsDClient = statsDClient
+  )
 }

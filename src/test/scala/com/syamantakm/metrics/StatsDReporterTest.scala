@@ -24,7 +24,7 @@ class StatsDReporterTest extends FlatSpec with Matchers {
     // Given
     val registry = new MetricRegistry()
 
-    val taggedMetrics = new TaggedMetrics(registry)
+    val taggedMetrics = TaggedMetrics(registry)
 
     val resultCapture = TreeSet[String]()
 
@@ -40,6 +40,46 @@ class StatsDReporterTest extends FlatSpec with Matchers {
     // When
     successCounter.inc(delta = 3)
     failureCounter.inc()
+    reporter.start(1, TimeUnit.SECONDS)
+    TimeUnit.SECONDS.sleep(3)
+
+    // Then
+    println("*** results captured ***")
+    resultCapture.foreach(println)
+    println("*** ## ***")
+    resultCapture.isEmpty should be(false)
+
+    reporter.stop()
+    statsDServer.shutdown()
+  }
+
+  it should "report gauges from metric registry" in {
+    // Given
+    val registry = new MetricRegistry()
+
+    val taggedMetrics = TaggedMetrics(registry)
+
+    val resultCapture = TreeSet[String]()
+
+    val statsDServer = TestUdpServer(port, resultCapture)
+
+    val client = new NonBlockingStatsDClient("my.app1", "localhost", port)
+
+    val reporter: StatsDReporter = createStatsDReporter(registry, client)
+
+    // When
+    taggedMetrics.gaugeInt("test.gaugeInt", "success", "host1") {
+      getIntGauge
+    }
+
+    taggedMetrics.gaugeLong("test.gaugeLong", "success", "host1") {
+      getLongGauge
+    }
+
+    taggedMetrics.gaugeDouble("test.gaugeDouble", "success", "host1") {
+      getDoubleGauge
+    }
+
     reporter.start(1, TimeUnit.SECONDS)
     TimeUnit.SECONDS.sleep(3)
 
@@ -89,15 +129,15 @@ class StatsDReporterTest extends FlatSpec with Matchers {
     statsDServer.shutdown()
   }
 
+  def getIntGauge:Int = 2
+  def getLongGauge: Long = 2
+  def getDoubleGauge: Double = 2.2
+
   def createStatsDReporter(registry: MetricRegistry, client: NonBlockingStatsDClient): StatsDReporter = {
-    val reporter = new StatsDReporter(
+    StatsDReporter(
       name = "my-statsd-reporter",
       registry = registry,
-      rateUnit = TimeUnit.MILLISECONDS,
-      durationUnit = TimeUnit.MILLISECONDS,
-      filter = MetricFilter.ALL,
       statsDClient = client
     )
-    reporter
   }
 }

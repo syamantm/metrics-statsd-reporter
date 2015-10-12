@@ -33,11 +33,11 @@ class TaggedMetrics(delegate: MetricRegistry) extends InstrumentedBuilder {
     gauge[Int](name, taggedIntGauge, tags)(f)
   }
 
-  def gaugeLong(name: String, tags: Seq[String])(f: => Long): Gauge[Long] = {
+  def gaugeLong(name: String, tags: String*)(f: => Long): Gauge[Long] = {
     gauge[Long](name, taggedLongGauge, tags)(f)
   }
 
-  def gaugeDouble(name: String, tags: Seq[String])(f: => Double): Gauge[Double] = {
+  def gaugeDouble(name: String, tags: String*)(f: => Double): Gauge[Double] = {
     gauge[Double](name, taggedDoubleGauge, tags)(f)
   }
   
@@ -109,4 +109,8 @@ class TaggedMetrics(delegate: MetricRegistry) extends InstrumentedBuilder {
         }
     }
   }
+}
+
+object TaggedMetrics {
+  def apply(delegate: MetricRegistry): TaggedMetrics = new TaggedMetrics(delegate)
 }
