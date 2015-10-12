@@ -9,16 +9,23 @@ import scala.collection.concurrent.TrieMap
  * @author syamantak.
  */
 
-case class TaggedMetricName(name: String, tags: Seq[String])
+case class TaggedKey(name: String, tags: Seq[String]) {
+  def taggedName: String = s"$name.${tags.mkString(".")}"
+}
+
+trait TaggedName {
+  def name: String
+  def tags: Seq[String]
+}
 
 class TaggedMetrics(delegate: MetricRegistry) extends InstrumentedBuilder {
-  private val taggedCounters = new TrieMap[TaggedMetricName, DWCounter]
-  private val taggedHistogram = new TrieMap[TaggedMetricName, DWHistogram]
-  private val taggedMeters = new TrieMap[TaggedMetricName, DWMeter]
-  private val taggedTimer = new TrieMap[TaggedMetricName, DWTimer]
-  private val taggedIntGauge = new TrieMap[TaggedMetricName, DWGauge[Int]]
-  private val taggedLongGauge = new TrieMap[TaggedMetricName, DWGauge[Long]]
-  private val taggedDoubleGauge = new TrieMap[TaggedMetricName, DWGauge[Double]]
+  private val taggedCounters = new TrieMap[TaggedKey, DWCounter]
+  private val taggedHistogram = new TrieMap[TaggedKey, DWHistogram]
+  private val taggedMeters = new TrieMap[TaggedKey, DWMeter]
+  private val taggedTimer = new TrieMap[TaggedKey, DWTimer]
+  private val taggedIntGauge = new TrieMap[TaggedKey, DWGauge[Int]]
+  private val taggedLongGauge = new TrieMap[TaggedKey, DWGauge[Long]]
+  private val taggedDoubleGauge = new TrieMap[TaggedKey, DWGauge[Double]]
 
   override val metricRegistry: MetricRegistry = delegate
 
@@ -34,56 +41,61 @@ class TaggedMetrics(delegate: MetricRegistry) extends InstrumentedBuilder {
     gauge[Double](name, taggedDoubleGauge, tags)(f)
   }
   
-  def counter(name: String, tags: String*): Counter = {
-    val key = TaggedMetricName(name, tags)
+  def counter(metricName: String, tags: String*): Counter = {
+    val key = TaggedKey(metricName, tags)
     new Counter(registerWithTags[DWCounter](taggedCounters, key, create => {
-      new DWCounter with Tagged {
+      new DWCounter with TaggedName {
+        override def name: String = metricName
         override def tags: Seq[String] = key.tags
       }
     }))
   }
   
-  def histogram(name: String, tags: String*): Histogram = {
-    val key = TaggedMetricName(name, tags)
+  def histogram(metricName: String, tags: String*): Histogram = {
+    val key = TaggedKey(metricName, tags)
     new Histogram(registerWithTags[DWHistogram](taggedHistogram, key, create => {
-      new DWHistogram(new ExponentiallyDecayingReservoir) with Tagged {
+      new DWHistogram(new ExponentiallyDecayingReservoir) with TaggedName {
+        override def name: String = metricName
         override def tags: Seq[String] = key.tags
       }
     }))
   }
 
-  def meter(name: String, tags: String*): Meter = {
-    val key = TaggedMetricName(name, tags)
+  def meter(metricName: String, tags: String*): Meter = {
+    val key = TaggedKey(metricName, tags)
     new Meter(registerWithTags[DWMeter](taggedMeters, key, create => {
-      new DWMeter with Tagged {
+      new DWMeter with TaggedName {
+        override def name: String = metricName
         override def tags: Seq[String] = key.tags
       }
     }))
   }
 
-  def timer(name: String, tags: String*): Timer = {
-    val key = TaggedMetricName(name, tags)
+  def timer(metricName: String, tags: String*): Timer = {
+    val key = TaggedKey(metricName, tags)
     new Timer(registerWithTags[DWTimer](taggedTimer, key, create => {
-      new DWTimer with Tagged {
+      new DWTimer with TaggedName {
+        override def name: String = metricName
         override def tags: Seq[String] = key.tags
       }
     }))
   }
 
-  private def gauge[T](name: String,
-                       map: TrieMap[TaggedMetricName, DWGauge[T]],
+  private def gauge[T](metricName: String,
+                       map: TrieMap[TaggedKey, DWGauge[T]],
                        tags: Seq[String])(f: => T)(implicit m: Manifest[T]): Gauge[T] = {
-    val key = TaggedMetricName(name, tags)
+    val key = TaggedKey(metricName, tags)
     new Gauge[T](registerWithTags[DWGauge[T]](map, key, create =>
-    {new DWGauge[T] with Tagged {
+    {new DWGauge[T] with TaggedName {
+      override def name: String = metricName
       override def tags: Seq[String] = key.tags
       override def getValue: T = f
     }}))
   }
   
-  private def registerWithTags[T <: Metric](map: TrieMap[TaggedMetricName, T],
-                                             key: TaggedMetricName,
-                                             f: (TaggedMetricName) => T)(implicit m: Manifest[T]): T = {
+  private def registerWithTags[T <: Metric](map: TrieMap[TaggedKey, T],
+                                             key: TaggedKey,
+                                             f: (TaggedKey) => T)(implicit m: Manifest[T]): T = {
     map.get(key) match {
       case Some(value) => value
       case None =>
@@ -92,11 +104,9 @@ class TaggedMetrics(delegate: MetricRegistry) extends InstrumentedBuilder {
         existing match {
           case Some(old) => old
           case None =>
-            metricRegistry.register(mkName(key.name, key.tags), newMetrics)
+            metricRegistry.register(key.taggedName, newMetrics)
             newMetrics
         }
     }
   }
-
-  private def mkName(name: String, tags: Seq[String]) = s"$name.${tags.mkString(".")}"
 }

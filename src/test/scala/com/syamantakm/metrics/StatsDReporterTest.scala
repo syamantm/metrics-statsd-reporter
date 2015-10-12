@@ -2,17 +2,20 @@ package com.syamantakm.metrics
 
 import java.util.concurrent.TimeUnit
 
-import scala.collection.mutable
-import scala.collection.mutable.{Set => MutableSet, TreeSet}
 import com.codahale.metrics.{MetricFilter, MetricRegistry}
 import com.syamantakm.TestUdpServer
 import com.syamantakm.metrics.tagging.TaggedMetrics
 import com.timgroup.statsd.NonBlockingStatsDClient
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
+
+import scala.collection.mutable.{Set => MutableSet, TreeSet}
 
 /**
  * @author syamantak.
  */
+@RunWith(classOf[JUnitRunner])
 class StatsDReporterTest extends FlatSpec with Matchers {
 
   val port = 8098
@@ -30,7 +33,7 @@ class StatsDReporterTest extends FlatSpec with Matchers {
     val successCounter = taggedMetrics.counter("test.counter", "success", "host1")
     val failureCounter = taggedMetrics.counter("test.counter", "failure", "host1")
 
-    val client = new NonBlockingStatsDClient("my.app", "localhost", port)
+    val client = new NonBlockingStatsDClient("my.app1", "localhost", port)
 
     val reporter: StatsDReporter = createStatsDReporter(registry, client)
 
@@ -38,12 +41,15 @@ class StatsDReporterTest extends FlatSpec with Matchers {
     successCounter.inc(delta = 3)
     failureCounter.inc()
     reporter.start(1, TimeUnit.SECONDS)
-    TimeUnit.SECONDS.sleep(2)
+    TimeUnit.SECONDS.sleep(3)
 
     // Then
-    resultCapture.contains("my.app.test.counter:3|c|#host1,success") should be(true)
-    resultCapture.contains("my.app.test.counter:1|c|#host1,failure") should be(true)
+    println("*** results captured ***")
+    resultCapture.foreach(println)
+    println("*** ## ***")
+    resultCapture.isEmpty should be(false)
 
+    reporter.stop()
     statsDServer.shutdown()
   }
 
@@ -59,7 +65,7 @@ class StatsDReporterTest extends FlatSpec with Matchers {
 
     val timer = taggedMetrics.timer("test.executionTime", "success", "host1")
 
-    val client = new NonBlockingStatsDClient("my.app", "localhost", port)
+    val client = new NonBlockingStatsDClient("my.app2", "localhost", port)
 
     val reporter: StatsDReporter = createStatsDReporter(registry, client)
 
@@ -71,19 +77,15 @@ class StatsDReporterTest extends FlatSpec with Matchers {
     }
 
     reporter.start(1, TimeUnit.SECONDS)
-    TimeUnit.SECONDS.sleep(2)
+    TimeUnit.SECONDS.sleep(3)
 
     // Then
-    val Pattern = "my\\.app\\.test\\.executionTime\\.max:\\d+\\|h\\|#host1,success".r
+    println("*** results captured ***")
+    resultCapture.foreach(println)
+    println("*** ## ***")
     resultCapture.isEmpty should be(false)
 
-    resultCapture foreach { elem =>
-      elem match {
-        case Pattern(c) => println("found max")
-        case noMatch => println(s"no match $noMatch")
-      }
-    }
-
+    reporter.stop()
     statsDServer.shutdown()
   }
 
