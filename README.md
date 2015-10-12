@@ -1,4 +1,5 @@
 # metrics-statsd-reporter
+[![Build Status](https://travis-ci.org/syamantm/metrics-statsd-reporter.svg?branch=master)](https://travis-ci.org/syamantm/metrics-statsd-reporter)
 
 A MetricsRegistry with tagging support and a StatsDReporter for datadog. 
 
@@ -7,6 +8,14 @@ A MetricsRegistry with tagging support and a StatsDReporter for datadog.
 * Tagging support with Metric
 * Histogram support
 * Datadog(StatsD) reporter using [Non blocking StatsD client](https://github.com/indeedeng/java-dogstatsd-client)
+
+## External Dependencies
+
+[dropwizard-metrics](https://github.com/dropwizard/metrics) - dropwizard metrics library.
+
+[java-dogstatsd-client](https://github.com/indeedeng/java-dogstatsd-client) - A StatsD client for jvm.
+
+[metrics-scala](https://github.com/erikvanoosten/metrics-scala) -  A scala Wrapper for [dropwizard-metrics](https://github.com/dropwizard/metrics).
 
 ## Usage
 
